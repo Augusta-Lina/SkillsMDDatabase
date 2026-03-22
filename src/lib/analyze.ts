@@ -8,7 +8,7 @@ export async function analyzeSkillSafety(content: string): Promise<{
   description: string;
 }> {
   const message = await client.messages.create({
-    model: "claude-sonnet-4-5-20241022",
+    model: "claude-sonnet-4-6",
     max_tokens: 1024,
     messages: [
       {
