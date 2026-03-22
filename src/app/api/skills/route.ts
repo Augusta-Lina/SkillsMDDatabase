@@ -4,6 +4,8 @@ import { getIndex, addEntry, updateEntry } from "@/lib/blob-db";
 import { analyzeSkillSafety } from "@/lib/analyze";
 import { SkillEntry } from "@/lib/types";
 
+export const maxDuration = 60;
+
 export async function GET() {
   const entries = await getIndex();
   return NextResponse.json(entries);

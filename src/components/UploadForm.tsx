@@ -47,8 +47,15 @@ export default function UploadForm() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Upload failed");
+        const text = await res.text();
+        let message = "Upload failed";
+        try {
+          const data = JSON.parse(text);
+          message = data.error || message;
+        } catch {
+          message = text || `Server error (${res.status})`;
+        }
+        throw new Error(message);
       }
 
       e.currentTarget.reset();
