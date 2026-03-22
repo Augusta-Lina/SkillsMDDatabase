@@ -16,6 +16,7 @@ export async function saveIndex(entries: SkillEntry[]): Promise<void> {
   await put(INDEX_NAME, JSON.stringify(entries, null, 2), {
     access: "public",
     addRandomSuffix: false,
+    allowOverwrite: true,
     contentType: "application/json",
   });
 }
