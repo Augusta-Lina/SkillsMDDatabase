@@ -1,0 +1,58 @@
+"use client";
+
+import { useState } from "react";
+import { SkillEntry } from "@/lib/types";
+import SafetyBadge from "./SafetyBadge";
+
+export default function SkillCard({ skill }: { skill: SkillEntry }) {
+  const [expanded, setExpanded] = useState(false);
+  const [content, setContent] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function toggleExpand() {
+    if (!expanded && content === null) {
+      setLoading(true);
+      const res = await fetch(`/api/skills/${skill.id}`);
+      const text = await res.text();
+      setContent(text);
+      setLoading(false);
+    }
+    setExpanded(!expanded);
+  }
+
+  return (
+    <div className="border border-gray-800 rounded-lg p-4 hover:border-gray-700 transition-colors">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <button
+            onClick={toggleExpand}
+            className="text-left w-full"
+          >
+            <h3 className="font-mono text-sm font-semibold text-gray-200 truncate">
+              {skill.filename}
+            </h3>
+            <p className="text-xs text-gray-500 mt-1">
+              by {skill.uploaderName} &middot;{" "}
+              {new Date(skill.uploadedAt).toLocaleDateString()}
+            </p>
+          </button>
+        </div>
+        <SafetyBadge status={skill.safetyStatus} />
+      </div>
+
+      <p className="text-xs text-gray-400 mt-2">{skill.safetyReasoning}</p>
+
+      {expanded && (
+        <div className="mt-3 border-t border-gray-800 pt-3">
+          {loading ? (
+            <p className="text-xs text-gray-500">Loading content...</p>
+          ) : (
+            <pre className="text-xs text-gray-300 whitespace-pre-wrap font-mono bg-gray-900 rounded p-3 max-h-80 overflow-auto">
+              {content}
+            </pre>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
