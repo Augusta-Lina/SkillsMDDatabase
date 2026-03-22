@@ -1,6 +1,8 @@
 export interface SkillEntry {
   id: string;
+  skillName: string;
   filename: string;
+  description: string;
   uploaderName: string;
   uploadedAt: string;
   blobUrl: string;

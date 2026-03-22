@@ -24,15 +24,16 @@ export default function SkillCard({ skill }: { skill: SkillEntry }) {
     <div className="border border-gray-800 rounded-lg p-4 hover:border-gray-700 transition-colors">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <button
-            onClick={toggleExpand}
-            className="text-left w-full"
-          >
-            <h3 className="font-mono text-sm font-semibold text-gray-200 truncate">
-              {skill.filename}
+          <button onClick={toggleExpand} className="text-left w-full">
+            <h3 className="text-sm font-semibold text-gray-200">
+              {skill.skillName}
             </h3>
+            {skill.description && (
+              <p className="text-xs text-gray-400 mt-1">{skill.description}</p>
+            )}
             <p className="text-xs text-gray-500 mt-1">
-              by {skill.uploaderName} &middot;{" "}
+              <span className="font-mono">{skill.filename}</span>
+              {" "}&middot; by {skill.uploaderName} &middot;{" "}
               {new Date(skill.uploadedAt).toLocaleDateString()}
             </p>
           </button>
@@ -40,7 +41,7 @@ export default function SkillCard({ skill }: { skill: SkillEntry }) {
         <SafetyBadge status={skill.safetyStatus} />
       </div>
 
-      <p className="text-xs text-gray-400 mt-2">{skill.safetyReasoning}</p>
+      <p className="text-xs text-gray-500 mt-2 italic">{skill.safetyReasoning}</p>
 
       {expanded && (
         <div className="mt-3 border-t border-gray-800 pt-3">

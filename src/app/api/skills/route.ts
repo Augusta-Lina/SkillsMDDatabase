@@ -12,6 +12,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
   const file = formData.get("file") as File | null;
+  const skillName = (formData.get("skillName") as string) || "Untitled Skill";
   const uploaderName = (formData.get("uploaderName") as string) || "Anonymous";
 
   if (!file) {
@@ -42,7 +43,9 @@ export async function POST(request: NextRequest) {
 
   const entry: SkillEntry = {
     id,
+    skillName,
     filename: file.name,
+    description: "",
     uploaderName,
     uploadedAt: new Date().toISOString(),
     blobUrl: blob.url,
@@ -57,9 +60,11 @@ export async function POST(request: NextRequest) {
     await updateEntry(id, {
       safetyStatus: result.status,
       safetyReasoning: result.reasoning,
+      description: result.description,
     });
     entry.safetyStatus = result.status;
     entry.safetyReasoning = result.reasoning;
+    entry.description = result.description;
   } catch (err) {
     await updateEntry(id, {
       safetyStatus: "error",

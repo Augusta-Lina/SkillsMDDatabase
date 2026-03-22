@@ -1,21 +1,44 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 export default function UploadForm() {
   const router = useRouter();
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [dragOver, setDragOver] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<string | null>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+
+    const input = folderInputRef.current;
+    if (!input?.files?.length) {
+      setError("Please select a folder containing a .md file.");
+      return;
+    }
+
+    // Find the .md file in the uploaded folder
+    const files = Array.from(input.files);
+    const mdFile = files.find((f) => f.name.endsWith(".md"));
+    if (!mdFile) {
+      setError("No .md file found in the selected folder.");
+      return;
+    }
+
+    // Extract skill name from the folder path
+    // webkitRelativePath is like "my-skill/skills.md"
+    const pathParts = mdFile.webkitRelativePath.split("/");
+    const folderName = pathParts.length > 1 ? pathParts[0] : mdFile.name.replace(".md", "");
+
     setUploading(true);
 
-    const form = e.currentTarget;
-    const formData = new FormData(form);
+    const formData = new FormData();
+    formData.append("file", mdFile);
+    formData.append("skillName", folderName);
+    formData.append("uploaderName", (e.currentTarget.elements.namedItem("uploaderName") as HTMLInputElement)?.value || "");
 
     try {
       const res = await fetch("/api/skills", {
@@ -28,7 +51,8 @@ export default function UploadForm() {
         throw new Error(data.error || "Upload failed");
       }
 
-      form.reset();
+      e.currentTarget.reset();
+      setSelectedFiles(null);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
@@ -37,40 +61,40 @@ export default function UploadForm() {
     }
   }
 
+  function handleFolderSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files?.length) {
+      setSelectedFiles(null);
+      return;
+    }
+    const fileList = Array.from(files);
+    const mdFile = fileList.find((f) => f.name.endsWith(".md"));
+    const folderName = fileList[0]?.webkitRelativePath.split("/")[0] || "Unknown";
+    setSelectedFiles(
+      mdFile
+        ? `Folder: ${folderName} (found ${mdFile.name})`
+        : `Folder: ${folderName} (no .md file found)`
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div
-        className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-          dragOver
-            ? "border-blue-500 bg-blue-500/10"
-            : "border-gray-700 hover:border-gray-600"
-        }`}
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragOver(true);
-        }}
-        onDragLeave={() => setDragOver(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setDragOver(false);
-          const input = e.currentTarget.querySelector(
-            'input[type="file"]'
-          ) as HTMLInputElement;
-          if (input && e.dataTransfer.files.length) {
-            input.files = e.dataTransfer.files;
-          }
-        }}
-      >
+      <div className="border-2 border-dashed border-gray-700 hover:border-gray-600 rounded-lg p-6 text-center transition-colors">
         <input
+          ref={folderInputRef}
           type="file"
-          name="file"
-          accept=".md"
-          required
+          // @ts-expect-error webkitdirectory is not in React types
+          webkitdirectory=""
+          directory=""
+          onChange={handleFolderSelect}
           className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-gray-800 file:text-gray-300 hover:file:bg-gray-700 file:cursor-pointer"
         />
         <p className="text-xs text-gray-500 mt-2">
-          Drag & drop or click to select a .md file (max 100KB)
+          Select a folder containing your skills.md file. The folder name will be used as the skill name.
         </p>
+        {selectedFiles && (
+          <p className="text-xs text-blue-400 mt-2">{selectedFiles}</p>
+        )}
       </div>
 
       <div className="flex gap-3">
