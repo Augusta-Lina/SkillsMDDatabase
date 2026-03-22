@@ -9,11 +9,13 @@ export default function UploadForm() {
   const [error, setError] = useState<string | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<string | null>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
 
+    const form = formRef.current;
     const input = folderInputRef.current;
     if (!input?.files?.length) {
       setError("Please select a folder containing a .md file.");
@@ -29,16 +31,17 @@ export default function UploadForm() {
     }
 
     // Extract skill name from the folder path
-    // webkitRelativePath is like "my-skill/skills.md"
     const pathParts = mdFile.webkitRelativePath.split("/");
     const folderName = pathParts.length > 1 ? pathParts[0] : mdFile.name.replace(".md", "");
+
+    const uploaderInput = form?.elements.namedItem("uploaderName") as HTMLInputElement | null;
 
     setUploading(true);
 
     const formData = new FormData();
     formData.append("file", mdFile);
     formData.append("skillName", folderName);
-    formData.append("uploaderName", (e.currentTarget.elements.namedItem("uploaderName") as HTMLInputElement)?.value || "");
+    formData.append("uploaderName", uploaderInput?.value || "");
 
     try {
       const res = await fetch("/api/skills", {
@@ -58,7 +61,7 @@ export default function UploadForm() {
         throw new Error(message);
       }
 
-      e.currentTarget.reset();
+      form?.reset();
       setSelectedFiles(null);
       router.refresh();
     } catch (err) {
@@ -85,7 +88,7 @@ export default function UploadForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
       <div className="border-2 border-dashed border-gray-700 hover:border-gray-600 rounded-lg p-6 text-center transition-colors">
         <input
           ref={folderInputRef}
