@@ -1,13 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { SkillEntry } from "@/lib/types";
 import SafetyBadge from "./SafetyBadge";
 
 export default function SkillCard({ skill }: { skill: SkillEntry }) {
+  const router = useRouter();
   const [expanded, setExpanded] = useState(false);
   const [content, setContent] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [reanalyzing, setReanalyzing] = useState(false);
 
   async function toggleExpand() {
     if (!expanded && content === null) {
@@ -19,6 +22,24 @@ export default function SkillCard({ skill }: { skill: SkillEntry }) {
     }
     setExpanded(!expanded);
   }
+
+  async function handleReanalyze() {
+    setReanalyzing(true);
+    try {
+      await fetch("/api/skills", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: skill.id }),
+      });
+      router.refresh();
+    } catch {
+      // ignore
+    } finally {
+      setReanalyzing(false);
+    }
+  }
+
+  const isStuck = skill.safetyStatus === "reviewing" || skill.safetyStatus === "error";
 
   return (
     <div className="border border-gray-800 rounded-lg p-4 hover:border-gray-700 transition-colors">
@@ -38,7 +59,18 @@ export default function SkillCard({ skill }: { skill: SkillEntry }) {
             </p>
           </button>
         </div>
-        <SafetyBadge status={skill.safetyStatus} />
+        <div className="flex items-center gap-2">
+          {isStuck && (
+            <button
+              onClick={handleReanalyze}
+              disabled={reanalyzing}
+              className="text-xs px-2 py-1 rounded bg-gray-800 text-gray-300 hover:bg-gray-700 disabled:text-gray-500"
+            >
+              {reanalyzing ? "Analyzing..." : "Re-analyze"}
+            </button>
+          )}
+          <SafetyBadge status={skill.safetyStatus} />
+        </div>
       </div>
 
       <p className="text-xs text-gray-500 mt-2 italic">{skill.safetyReasoning}</p>

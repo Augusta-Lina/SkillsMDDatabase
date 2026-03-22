@@ -11,6 +11,38 @@ export async function GET() {
   return NextResponse.json(entries);
 }
 
+export async function PATCH(request: NextRequest) {
+  const { id } = await request.json();
+  if (!id) {
+    return NextResponse.json({ error: "No id provided" }, { status: 400 });
+  }
+
+  const entries = await getIndex();
+  const entry = entries.find((e) => e.id === id);
+  if (!entry) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  try {
+    const res = await fetch(entry.blobUrl);
+    const content = await res.text();
+    const result = await analyzeSkillSafety(content);
+    await updateEntry(id, {
+      safetyStatus: result.status,
+      safetyReasoning: result.reasoning,
+      description: result.description,
+    });
+    return NextResponse.json({ ...entry, ...result });
+  } catch (err) {
+    console.error("Re-analysis error:", err);
+    await updateEntry(id, {
+      safetyStatus: "error",
+      safetyReasoning: "Safety analysis failed.",
+    });
+    return NextResponse.json({ error: "Analysis failed" }, { status: 500 });
+  }
+}
+
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
   const file = formData.get("file") as File | null;
